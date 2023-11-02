@@ -76,15 +76,15 @@ def histogram_equalize(source, texture):
 
 for pair in glob.glob('pairs/*'):
     source, = glob.glob(os.path.join(pair, '*source*'))
-    print(source)
     source = io.imread(source)
     source = util.img_as_float32(source)
 
     texture, = glob.glob(os.path.join(pair, '*texture*'))
-    print(texture)
     texture = io.imread(texture)
     texture = util.img_as_float32(texture)
 
     out = histogram_equalize(source, texture)
-    io.imsave('part4.png', out)
+    out_path = os.path.join(pair, 'output.jpg')
+    io.imsave(out_path, out)
+
     showColorTransfer(source, texture, out)
