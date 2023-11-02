@@ -8,10 +8,14 @@
 import os
 import glob
 import numpy as np
-from skimage import color, io, util
+from skimage import color, io, util, segmentation
 # from PIL import Image
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 import cv2
+=======
+from numpy import ma
+>>>>>>> b8cb0a3b2de90bdd84ce8ffecd936aab5626c298
 
 ####################################################################################
 # Functions
@@ -62,7 +66,23 @@ def showColorTransfer( input, colortarget, transfer ):
     plt.imshow( transfer.astype(np.uint8) )
     plt.show()
 
-### part 4
+def histogram_segment_equalize(source, texture):
+    pixel_count = np.product(np.shape(source)[:2])
+    segments = segmentation.felzenszwalb(source, scale=500, min_size=pixel_count//50)
+    unique = np.unique(segments)
+    unique = np.expand_dims(unique, (1, 2))
+    segments = segments == unique
+    segments = np.expand_dims(segments, 3)
+    output = np.zeros_like(source)
+    for segment in segments:
+        source_masked = ma.array(source)
+        source_masked.mask = segment
+        texture_masked = ma.array(texture)
+        texture_masked.mask = segment
+        out = (source - np.mean(source_masked, axis=(0,1))) / np.std(source_masked, axis=(0,1))
+        out = out * np.std(texture_masked, axis=(0,1)) + np.mean(texture_masked, axis=(0,1))
+        output = np.where(segment, out, output)
+    return np.clip(output, 0, 1) * 255.0
 
 def histogram_equalize(source, texture):
     source = color.rgb2lab(source)
@@ -75,7 +95,26 @@ def histogram_equalize(source, texture):
     out = color.lab2rgb(out) * 255.0
     return out
 
+# where both in the pair have the same size
+for pair in glob.glob('equal/*'):
+    print(pair)
+    source, = glob.glob(os.path.join(pair, '*source*'))
+    source = io.imread(source)
+    source = util.img_as_float32(source)
+
+    texture, = glob.glob(os.path.join(pair, '*texture*'))
+    texture = io.imread(texture)
+    texture = util.img_as_float32(texture)
+
+    out = histogram_segment_equalize(source, texture)
+
+    out_path = os.path.join(pair, 'output.jpg')
+    out = np.asarray(out, dtype=np.uint8)
+    io.imsave(out_path, out)
+
+# the images in the pair can have a different size
 for pair in glob.glob('pairs/*'):
+    print(pair)
     source, = glob.glob(os.path.join(pair, '*source*'))
     source = io.imread(source)
     source = util.img_as_float32(source)
@@ -85,10 +124,9 @@ for pair in glob.glob('pairs/*'):
     texture = util.img_as_float32(texture)
 
     out = histogram_equalize(source, texture)
+
     out_path = os.path.join(pair, 'output.jpg')
-    print(out.shape)
     out = np.asarray(out, dtype=np.uint8)
-    # out = n.fromarray((out * 255).astype(np.uint8))
     io.imsave(out_path, out)
 
     # make a mask
