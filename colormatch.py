@@ -64,8 +64,8 @@ def showColorTransfer( input, colortarget, transfer ):
 ### part 4
 
 def histogram_equalize(source, texture):
-    source = color.rgb2lab(source/255.0)
-    texture = color.rgb2lab(texture/255.0)
+    source = color.rgb2lab(source)
+    texture = color.rgb2lab(texture)
 
     out = (source - np.mean(source, axis=(0,1))) / np.std(source, axis=(0,1))
     out = out * np.std(texture, axis=(0,1)) + np.mean(texture, axis=(0,1))
@@ -76,10 +76,12 @@ def histogram_equalize(source, texture):
 
 for pair in glob.glob('pairs/*'):
     source, = glob.glob(os.path.join(pair, '*source*'))
+    print(source)
     source = io.imread(source)
     source = util.img_as_float32(source)
 
     texture, = glob.glob(os.path.join(pair, '*texture*'))
+    print(texture)
     texture = io.imread(texture)
     texture = util.img_as_float32(texture)
 
