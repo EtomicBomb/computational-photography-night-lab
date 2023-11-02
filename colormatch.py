@@ -9,7 +9,7 @@ import os
 import glob
 import numpy as np
 from skimage import color, io, util
-from PIL import Image
+# from PIL import Image
 import matplotlib.pyplot as plt
 
 ####################################################################################
@@ -85,6 +85,9 @@ for pair in glob.glob('pairs/*'):
 
     out = histogram_equalize(source, texture)
     out_path = os.path.join(pair, 'output.jpg')
+    print(out.shape)
+    out = np.asarray(out, dtype=np.uint8)
+    # out = n.fromarray((out * 255).astype(np.uint8))
     io.imsave(out_path, out)
 
     showColorTransfer(source, texture, out)
