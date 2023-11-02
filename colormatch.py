@@ -11,6 +11,7 @@ import numpy as np
 from skimage import color, io, util
 # from PIL import Image
 import matplotlib.pyplot as plt
+import cv2
 
 ####################################################################################
 # Functions
@@ -89,5 +90,37 @@ for pair in glob.glob('pairs/*'):
     out = np.asarray(out, dtype=np.uint8)
     # out = n.fromarray((out * 255).astype(np.uint8))
     io.imsave(out_path, out)
+
+    # make a mask
+    image = cv2.imread('light_paint.jpg')
+    image_bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    mask = np.where(image_bw > 25, 255, 0).astype(np.uint8)
+    print(np.min(mask))
+    print(np.max(mask))
+
+    cv2.imshow('Mask', image/255)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.imshow('image', mask/255)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    # mask = np.resize(mask, (out.shape[0], out.shape[1]))
+    mask = cv2.resize(mask, (out.shape[1], out.shape[0]), interpolation=cv2.INTER_AREA)
+    cv2.imwrite('mask.jpg', mask)
+    newMask = np.zeros(out.shape)
+    newMask[:,:,0] = mask
+    newMask[:,:,1] = mask
+    newMask[:,:,2] = mask
+    image = cv2.resize(image, (out.shape[1], out.shape[0]), interpolation=cv2.INTER_AREA)
+    cv2.imwrite('mask_image.jpg', image)
+    out_new = np.where(newMask>0, image, out)
+    cv2.imshow('out_new', out_new/255)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.imshow('newMask', newMask/255)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
 
     showColorTransfer(source, texture, out)
