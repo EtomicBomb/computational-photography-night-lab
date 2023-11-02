@@ -5,8 +5,10 @@
 # Brown University
 #
 
+import os
+import glob
 import numpy as np
-from skimage import color, io
+from skimage import color, io, util
 from PIL import Image
 import matplotlib.pyplot as plt
 
@@ -61,17 +63,26 @@ def showColorTransfer( input, colortarget, transfer ):
 
 ### part 4
 
-source = io.imread('source.png')
-texture = io.imread('texture.png')
+def histogram_equalize(source, texture):
+    source = color.rgb2lab(source/255.0)
+    texture = color.rgb2lab(texture/255.0)
 
-source = color.rgb2lab(source/255.0)
-texture = color.rgb2lab(texture/255.0)
+    out = (source - np.mean(source, axis=(0,1))) / np.std(source, axis=(0,1))
+    out = out * np.std(texture, axis=(0,1)) + np.mean(texture, axis=(0,1))
 
-out = (source - np.mean(source, axis=(0,1))) / np.std(source, axis=(0,1))
-out = out * np.std(texture, axis=(0,1)) + np.mean(texture, axis=(0,1))
+    out = np.clip(out, [0,-100,-100], [100,100,100])
+    out = color.lab2rgb(out) * 255.0
+    return out
 
-out = np.clip(out, [0,-100,-100], [100,100,100])
-out = color.lab2rgb(out) * 255.0
+for pair in glob.glob('pairs/*'):
+    source, = glob.glob(os.path.join(pair, '*source*'))
+    source = io.imread(source)
+    source = util.img_as_float32(source)
 
-io.imsave('part4.png', out)
-showColorTransfer(img, ct, out)
+    texture, = glob.glob(os.path.join(pair, '*texture*'))
+    texture = io.imread(texture)
+    texture = util.img_as_float32(texture)
+
+    out = histogram_equalize(source, texture)
+    io.imsave('part4.png', out)
+    showColorTransfer(source, texture, out)
