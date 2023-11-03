@@ -142,102 +142,6 @@ def histogram_equalize(source, texture):
     out = color.lab2rgb(out) * 255.0
     return out
 
-<<<<<<< HEAD
-# # where both in the pair have the same size
-# for pair in glob.glob('equal/*'):
-#     print(pair)
-#     source, = glob.glob(os.path.join(pair, '*source*'))
-#     source = io.imread(source)
-#     source = util.img_as_float32(source)
-
-#     texture, = glob.glob(os.path.join(pair, '*texture*'))
-#     texture = io.imread(texture)
-#     texture = util.img_as_float32(texture)
-
-#     out = histogram_segment_equalize(source, texture)
-
-
-#     out_path = os.path.join(pair, 'outputDouble.jpg')
-#     out = np.asarray(out, dtype=np.uint8)
-#     io.imsave(out_path, out)
-
-# for pair in glob.glob('equal/*'):
-#     print(pair)
-#     source, = glob.glob(os.path.join(pair, '*output.jpg*'))
-#     source = io.imread(source)
-#     source = util.img_as_float32(source)
-
-#     texture, = glob.glob(os.path.join(pair, '*outputNONSEG*'))
-#     texture = io.imread(texture)
-#     texture = util.img_as_float32(texture)
-
-#     diff = np.clip(np.subtract(source,texture), 0, 255)
-#     diff = diff * 10
-#     print(diff.shape)
-
-
-#     # out = histogram_segment_equalize(source, texture)
-
-
-#     out_path = os.path.join(pair, 'diff.jpg')
-#     out = np.asarray(diff, dtype=np.uint8)
-#     io.imsave(out_path, out)
-
-
-# the images in the pair can have a different size
-# for pair in glob.glob('pairs/*'):
-
-
-# for pair in glob.glob('equal/*'):
-#     print(pair)
-#     source, = glob.glob(os.path.join(pair, '*source*'))
-#     source = io.imread(source)
-#     source = util.img_as_float32(source)
-
-#     texture, = glob.glob(os.path.join(pair, '*texture*'))
-#     texture = io.imread(texture)
-#     texture = util.img_as_float32(texture)
-
-#     out = histogram_equalize(source, texture)
-
-#     out_path = os.path.join(pair, 'outputNONSEG.jpg')
-#     out = np.asarray(out, dtype=np.uint8)
-#     io.imsave(out_path, out)
-
-
-
-# make a mask
-image = cv2.imread('./night/light1.jpg')
-image_bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-mask = np.where(image_bw > 180, 255, 0).astype(np.uint8)
-print(np.min(mask))
-print(np.max(mask))
-
-cv2.imshow('Mask', image/255)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-cv2.imshow('image', mask/255)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-# mask = cv2.resize(mask, (out.shape[1], out.shape[0]), interpolation=cv2.INTER_AREA)
-cv2.imwrite('mask.jpg', mask)
-# newMask = np.zeros(out.shape)
-# newMask[:,:,0] = mask
-# newMask[:,:,1] = mask
-# newMask[:,:,2] = mask
-# image = cv2.resize(image, (out.shape[1], out.shape[0]), interpolation=cv2.INTER_AREA)
-# cv2.imwrite('mask_image.jpg', image)
-# out_new = np.where(newMask>0, image, out)
-# cv2.imshow('out_new', out_new/255)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-# cv2.imshow('newMask', newMask/255)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-
-=======
 def histogram_equalize_with_mask(source, texture, source_mask, texture_mask):
     source_lab = color.rgb2lab(source)
     texture_lab = color.rgb2lab(texture)
@@ -333,11 +237,62 @@ def polygon_recolor():
         # out = np.fromarray((out * 255).astype(np.uint8))
         io.imsave(out_path, out)
 
+def manual_recolor():
+    for pair in glob.glob('with_mask/*'):
+        
+        # source, = glob.glob(os.path.join(pair, '*source*'))
+        # source = io.imread(source)
+        # source = util.img_as_float32(source)
+
+        texture, = glob.glob(os.path.join(pair, '*texture*'))
+        texture = io.imread(texture)
+        texture = util.img_as_float32(texture)
+        source = texture
+
+        texture, = glob.glob(os.path.join(pair, '*light1*'))
+        texture = io.imread(texture)
+        texture = util.img_as_float32(texture)
+
+        # mask, = glob.glob(os.path.join(pair, '*mask*'))
+        # mask = io.imread(mask)
+        # print(np.max(mask))
+        # print(np.min(mask))
+        # mask = np.where(mask < 100, 255, 0).astype(np.uint8)
+        # mask = util.img_as_float32(mask)
+        # mask = mask[:,:,0]
+        # mask = np.zeros(source.shape[:2], dtype=np.bool_)
+        out = histogram_segment_equalize(source, texture)
+
+        # for i in range(3):
+        #     # texture_mask = get_mask_with_mouse(texture)
+        #     colored = histogram_equalize_with_mask(source, texture, mask, mask)
+        #     colored = util.img_as_float32(colored) 
+        #     out = source 
+        #     out = np.where(colored > 0, colored, out)
+        #     np.clip(out, 0, 1, out=out)
+        #     source = out
+
+        # # out = histogram_equalize(source, texture)
+        # out_path = os.path.join(pair, 'output.jpg')
+        # print(out.shape)
+        # out = np.asarray(out * 255, dtype=np.uint8)
+        # # out = np.fromarray((out * 255).astype(np.uint8))
+        # io.imsave(out_path, out)
+
+        out_path = os.path.join(pair, 'newm.jpg')
+        # print(out.shape)
+        out = np.asarray(out , dtype=np.uint8)
+        # out = np.fromarray((out * 255).astype(np.uint8))
+        io.imsave(out_path, out)
+
+
+
+
 def main():
-    segment_recolor()
+    # segment_recolor()
     # naive_recolor()
     # polygon_recolor()
+    manual_recolor()
 
 if __name__ == '__main__':
     main()
->>>>>>> 0b937d36ff11db8b4675f6932e59f4052bad0e24
