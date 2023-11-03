@@ -13,6 +13,7 @@ from skimage import color, io, util, segmentation
 import matplotlib.pyplot as plt
 from numpy import ma
 from skimage.draw import polygon
+from scipy import sparse
 
 ####################################################################################
 # Functions
@@ -119,12 +120,10 @@ def histogram_segment_equalize(source, texture):
     segments = np.expand_dims(segments, 3)
     output = np.zeros_like(source)
     for segment in segments:
-        source_masked = ma.array(source)
-        source_masked.mask = segment
-        texture_masked = ma.array(texture)
-        texture_masked.mask = segment
-        out = (source - ma.mean(source_masked, axis=(0,1))) / ma.std(source_masked, axis=(0,1))
-        out = out * ma.std(texture_masked, axis=(0,1)) + ma.mean(texture_masked, axis=(0,1))
+        source_flat = np.reshape(source, (-1, 3))[np.ravel(segment)]
+        texture_flat = np.reshape(texture, (-1, 3))[np.ravel(segment)]
+        out = (source - np.mean(source_flat, axis=(0))) / np.std(source_flat, axis=(0))
+        out = out * np.std(texture_flat, axis=(0)) + np.mean(texture_flat, axis=(0))
         output = np.where(segment, out, output)
 #         plt.imshow(output)
 #         plt.show()
@@ -145,6 +144,9 @@ def histogram_equalize_with_mask(source, texture, source_mask, texture_mask):
     source_lab = color.rgb2lab(source)
     texture_lab = color.rgb2lab(texture)
     source_masked = apply_mask(source_lab, source_mask)
+    print(np.min(source_masked), np.max(source_masked))
+    plt.imshow((source_masked - np.min(source_masked)) / (np.max(source_masked) - np.min(source_masked)) + np.min(source_masked))
+    plt.show()
     texture_masked = apply_mask(texture_lab, texture_mask)
     out = np.zeros_like(source_lab)
     for i in range(3):  # Iterate over the L, a, b channels
@@ -176,19 +178,12 @@ def segment_recolor():
         texture = io.imread(texture)
         texture = util.img_as_float32(texture)
 
-        out_segment = histogram_segment_equalize(source, texture)
-        out_flat = histogram_equalize(source, texture)
-        diff = out_segment - out_flat
-        print(diff)
-    #     plt.imshow(diff)
-    #     plt.show()
-        out = out_segment + 1.5 * diff
+        out = histogram_segment_equalize(source, texture)
         out = np.clip(out, 0, 255)
 
         out_path = os.path.join(pair, 'output.jpg')
         out = np.asarray(out, dtype=np.uint8)
         io.imsave(out_path, out)
-
 
 def naive_recolor():
     # the images in the pair can have a different size
@@ -209,7 +204,7 @@ def naive_recolor():
         io.imsave(out_path, out)
 
 def polygon_recolor():
-    for pair in glob.glob('pairs/*'):
+    for pair in sorted(glob.glob('pairs/*')):
         
         source, = glob.glob(os.path.join(pair, '*source*'))
         source = io.imread(source)
@@ -236,10 +231,45 @@ def polygon_recolor():
         # out = np.fromarray((out * 255).astype(np.uint8))
         io.imsave(out_path, out)
 
+def manual_segment_recolor():
+    # where both in the pair have the same size
+    source = io.imread('manual/source.jpg')
+    source = util.img_as_float32(source)
+    source = color.rgb2lab(source)
+    texture = io.imread('manual/texture.jpg')
+    texture = util.img_as_float32(texture)
+    texture = color.rgb2lab(texture)
+    source_masks = io.imread('manual/source_masks.png')
+    source_masks = util.img_as_float32(source_masks)
+    texture_masks = io.imread('manual/texture_masks.png')
+    texture_masks = util.img_as_float32(texture_masks)
+
+    colors, counts = np.unique(np.reshape(source_masks, (-1, 3)), axis=0, return_counts=True)
+    colors = colors[counts > 500]
+
+    output = (source - np.mean(source, axis=(0,1))) / np.std(source, axis=(0,1))
+    output = output * np.std(texture, axis=(0,1)) + np.mean(texture, axis=(0,1))
+    baseline = output
+
+    for color_mask in colors:
+        source_mask = np.all(source_masks == color_mask, axis=2, keepdims=True)
+        texture_mask = np.all(texture_masks == color_mask, axis=2, keepdims=True)
+        source_flat = np.reshape(source, (-1, 3))[np.ravel(source_mask)]
+        texture_flat = np.reshape(texture, (-1, 3))[np.ravel(texture_mask)]
+        out = (source - np.mean(source_flat, axis=(0))) / np.std(source_flat, axis=(0))
+        out = out * np.std(texture_flat, axis=(0)) + np.mean(texture_flat, axis=(0))
+        output = np.where(np.atleast_3d(source_mask), out, output)
+    output = np.clip(color.lab2rgb(output), 0, 1)
+
+    io.imsave('manual/naive-global-correction.jpg', (color.lab2rgb(baseline)))
+    io.imsave('manual/output.jpg', output)
+    return output
+
 def main():
-    segment_recolor()
-    # naive_recolor()
-    # polygon_recolor()
+#     manual_segment_recolor()
+#     segment_recolor()
+#     naive_recolor()
+#     polygon_recolor()
 
 if __name__ == '__main__':
     main()
