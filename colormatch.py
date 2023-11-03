@@ -75,9 +75,11 @@ def histogram_segment_equalize(source, texture):
         source_masked.mask = segment
         texture_masked = ma.array(texture)
         texture_masked.mask = segment
-        out = (source - np.mean(source_masked, axis=(0,1))) / np.std(source_masked, axis=(0,1))
-        out = out * np.std(texture_masked, axis=(0,1)) + np.mean(texture_masked, axis=(0,1))
+        out = (source - ma.mean(source_masked, axis=(0,1))) / ma.std(source_masked, axis=(0,1))
+        out = out * ma.std(texture_masked, axis=(0,1)) + ma.mean(texture_masked, axis=(0,1))
         output = np.where(segment, out, output)
+#         plt.imshow(output)
+#         plt.show()
     return np.clip(output, 0, 1) * 255.0
 
 def histogram_equalize(source, texture):
@@ -102,7 +104,14 @@ for pair in glob.glob('equal/*'):
     texture = io.imread(texture)
     texture = util.img_as_float32(texture)
 
-    out = histogram_segment_equalize(source, texture)
+    out_segment = histogram_segment_equalize(source, texture)
+    out_flat = histogram_equalize(source, texture)
+    diff = out_segment - out_flat
+    print(diff)
+#     plt.imshow(diff)
+#     plt.show()
+    out = out_segment + 1.5 * diff
+    out = np.clip(out, 0, 255)
 
     out_path = os.path.join(pair, 'output.jpg')
     out = np.asarray(out, dtype=np.uint8)
